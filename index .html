@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>BNBTHEGODS · Mint &amp; Market</title>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<style>
+  :root{--bg:#0A0810;--panel:#12101A;--line:#241F33;--txt:#F2EEE6;--mut:#8B84A0;--gold:#FFC94A;--ember:#FF7A18;--ok:#3DFF9A}
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#2A1A08 0%,var(--bg) 60%),var(--bg);color:var(--txt);
+       font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 80px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:26px;flex-wrap:wrap}
+  .brand{font-weight:800;letter-spacing:.14em;font-size:14px;color:var(--gold)}
+  .btn{background:linear-gradient(135deg,var(--gold),var(--ember));color:#1A0F04;border:0;border-radius:999px;padding:11px 20px;
+       font-weight:800;cursor:pointer;font-size:14px}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--txt)}
+  .btn.sm{padding:7px 14px;font-size:13px}
+  .tabs{display:flex;gap:8px;margin-bottom:22px}
+  .tab{padding:9px 18px;border-radius:999px;border:1px solid var(--line);background:#0A0810;color:var(--mut);cursor:pointer;font-weight:700;font-size:14px}
+  .tab.on{background:linear-gradient(135deg,var(--gold),var(--ember));color:#1A0F04;border-color:transparent}
+  h1{font-size:44px;line-height:1.03;margin:0 0 12px;letter-spacing:-.02em}
+  h1 span{background:linear-gradient(135deg,var(--gold),var(--ember));-webkit-background-clip:text;background-clip:text;color:transparent}
+  p.lede{color:var(--mut);margin:0 0 20px;max-width:52ch}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px}
+  .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px}
+  .row:last-child{border-bottom:0}
+  .row b{color:var(--gold);font-variant-numeric:tabular-nums}
+  .qty{display:flex;align-items:center;gap:8px;margin:14px 0}
+  .qty input,.fld input{background:#0A0810;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px;font-size:15px;font-weight:700}
+  .qty input{width:70px;text-align:center}
+  .qty button{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:#0A0810;color:var(--txt);font-size:18px;cursor:pointer}
+  .fld{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+  .fld label{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-top:16px}
+  .card{background:#0E0C14;border:1px solid var(--line);border-radius:16px;padding:14px}
+  .card .id{font-weight:800;color:var(--gold);font-size:15px}
+  .card .px{font-size:20px;font-weight:800;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+  .card .usd{color:var(--mut);font-size:12px}
+  .card .seller{color:var(--mut);font-size:11px;margin:8px 0;word-break:break-all}
+  .status{margin-top:12px;font-size:13px;min-height:18px}
+  .ok{color:var(--ok)} .err{color:#FF6B6B}
+  .note{font-size:12px;color:var(--mut);margin-top:10px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;word-break:break-all;color:var(--mut)}
+  footer{margin-top:44px;color:var(--mut);font-size:12px;text-align:center}
+  .hide{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">BNBTHEGODS · $BTGs</div>
+    <button class="btn ghost" id="connectBtn">Connect wallet</button>
+  </header>
+
+  <div class="tabs">
+    <div class="tab on" data-tab="mint">Mint</div>
+    <div class="tab" data-tab="market">Market</div>
+    <div class="tab" data-tab="sell">List / Offer</div>
+  </div>
+
+  <!-- MINT -->
+  <section id="tab-mint">
+    <h1>Mint a <span>God</span>.</h1>
+    <p class="lede">200,000 on-chain sun deities. Only wallets holding a Binance <b>.ai Agent ID</b> can mint. First god free, then $0.30 each at the live Chainlink BNB rate.</p>
+    <div class="grid">
+      <div class="panel">
+        <div class="row"><span>Minted</span><b id="minted">—</b></div>
+        <div class="row"><span>Remaining</span><b id="remaining">—</b></div>
+        <div class="row"><span>Price per paid mint</span><b id="unitPrice">—</b></div>
+        <div class="row"><span>Your first mint</span><b id="freebie">—</b></div>
+        <div class="row"><span>Minted by you</span><b id="mine">—</b></div>
+        <div class="qty">
+          <button id="minus">−</button><input id="qty" type="number" min="1" max="20" value="1" /><button id="plus">+</button>
+          <span style="color:var(--mut);font-size:13px">max 20 / wallet</span>
+        </div>
+        <button class="btn" id="mintBtn" style="width:100%" disabled>Connect wallet to mint</button>
+        <div class="status" id="mintStatus"></div>
+      </div>
+      <div class="panel">
+        <div class="fld"><label>Collection</label><div class="mono" id="nftAddr"></div></div>
+        <div class="fld"><label>Marketplace</label><div class="mono" id="mktAddr"></div></div>
+        <div class="note">Minting needs no approval. Listing does — one approval for the market, then list any god you hold. Your 2% creator royalty is paid on every sale automatically.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MARKET -->
+  <section id="tab-market" class="hide">
+    <h1>The <span>Market</span>.</h1>
+    <p class="lede">Peer-to-peer. Listed gods stay in the seller's wallet until someone buys. Royalties pay out in the same transaction.</p>
+    <button class="btn ghost sm" id="refreshBtn">Refresh</button>
+    <div class="cards" id="cards"><div class="note">Loading…</div></div>
+    <div class="status" id="marketStatus"></div>
+  </section>
+
+  <!-- SELL -->
+  <section id="tab-sell" class="hide">
+    <h1>List or <span>bid</span>.</h1>
+    <p class="lede">Listing costs gas only, no market fee. Offers escrow BNB until accepted, cancelled, or expired.</p>
+    <div class="grid">
+      <div class="panel">
+        <h3 style="margin:0 0 14px">List one of your gods</h3>
+        <div class="fld"><label>Token ID</label><input id="listId" type="number" min="1" placeholder="3" /></div>
+        <div class="fld"><label>Price in BNB <span id="listUsd" style="color:var(--gold)"></span></label><input id="listPrice" type="text" placeholder="0.000802" /></div>
+        <div class="fld"><label>Duration</label>
+          <select id="listDur" style="background:#0A0810;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px">
+            <option value="1">1 day</option><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option>
+          </select></div>
+        <button class="btn" id="listBtn">Approve &amp; list</button>
+        <div class="status" id="listStatus"></div>
+        <div class="note">The first listing asks for one approval (<span class="mono">setApprovalForAll</span>) to the market contract only.</div>
+      </div>
+      <div class="panel">
+        <h3 style="margin:0 0 14px">Make an offer</h3>
+        <div class="fld"><label>Token ID</label><input id="offerId" type="number" min="1" placeholder="3" /></div>
+        <div class="fld"><label>Offer in BNB</label><input id="offerAmt" type="text" placeholder="0.0004" /></div>
+        <div class="fld"><label>Duration</label>
+          <select id="offerDur" style="background:#0A0810;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px">
+            <option value="1">1 day</option><option value="7" selected>7 days</option><option value="30">30 days</option><option value="90">90 days</option>
+          </select></div>
+        <button class="btn" id="offerBtn">Send offer</button>
+        <div class="status" id="offerStatus"></div>
+        <div class="note">Your BNB is escrowed by the market until the owner accepts, you cancel, or it expires.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>Independent community project. Not affiliated with Binance. NFTs are collectibles; no return is promised.</footer>
+</div>
+
+<script>
+const NFT  = "0xc989e63a7493ca79d288f1e70cf04aa07b075917";
+const MKT  = "0xc5788ddf233914a21989b80f659c38a6ada40a54";
+const RPC  = "https://bsc-dataseed.binance.org";
+const USD_PER_BNB = 748; // approximate, for display only
+
+const NFT_ABI = [
+  "function mint(uint256 quantity) payable",
+  "function priceFor(address wallet, uint256 quantity) view returns (uint256)",
+  "function unitPrice() view returns (uint256)",
+  "function mintedBy(address) view returns (uint256)",
+  "function totalMinted() view returns (uint256)",
+  "function remaining() view returns (uint256)",
+  "function isAgent(address) view returns (bool)",
+  "function ownerOf(uint256) view returns (address)",
+  "function balanceOf(address) view returns (uint256)",
+  "function setApprovalForAll(address,bool)",
+  "function isApprovedForAll(address,address) view returns (bool)"
+];
+const MKT_ABI = [
+  "function getListings(uint256 offset, uint256 limit) view returns (uint256[] ids, address[] sellers, address[] collections, uint256[] tokenIds, uint256[] prices, uint64[] expiries, bool[] fillable)",
+  "function listingCount() view returns (uint256)",
+  "function listingOf(address collection, uint256 tokenId) view returns (tuple(address seller, address collection, uint256 tokenId, uint256 price, uint64 expiry, bool active))",
+  "function buy(uint256 id) payable",
+  "function list(address collection, uint256 tokenId, uint256 price, uint64 duration) returns (uint256)",
+  "function cancelListing(uint256 id)",
+  "function makeOffer(address collection, uint256 tokenId, uint64 duration) payable returns (uint256)"
+];
+
+const $ = (id) => document.getElementById(id);
+const provider = new ethers.JsonRpcProvider(RPC);
+const nftRead = new ethers.Contract(NFT, NFT_ABI, provider);
+const mktRead = new ethers.Contract(MKT, MKT_ABI, provider);
+let signer=null, account=null, nftW=null, mktW=null;
+
+$("nftAddr").textContent = NFT;
+$("mktAddr").textContent = MKT;
+
+const fmtBnb = (w) => Number(ethers.formatEther(w)).toFixed(6);
+const fmtUsd = (w) => "$" + (Number(ethers.formatEther(w)) * USD_PER_BNB).toFixed(2);
+function say(el, msg, cls){ const e=$(el); e.textContent = msg||""; e.className = "status " + (cls||""); }
+
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
+  t.classList.add("on");
+  ["mint&","market","sell"].forEach(()=>{});
+  $("tab-mint").classList.add("hide"); $("tab-market").classList.add("hide"); $("tab-sell").classList.add("hide");
+  $("tab-" + t.dataset.tab).classList.remove("hide");
+});
+
+async function loadMint(){
+  try{
+    const [minted, left, unit] = await Promise.all([nftRead.totalMinted(), nftRead.remaining(), nftRead.unitPrice()]);
+    $("minted").textContent = Number(minted).toLocaleString();
+    $("remaining").textContent = Number(left).toLocaleString();
+    $("unitPrice").textContent = fmtBnb(unit) + " BNB (" + fmtUsd(unit) + ")";
+    if(account){
+      const mine = await nftRead.mintedBy(account);
+      $("mine").textContent = Number(mine);
+      $("freebie").textContent = Number(mine)===0 ? "FREE" : "used";
+      if(!(await nftRead.isAgent(account))) say("mintStatus","This wallet holds no .ai Agent ID — mint will revert.","err");
+    }
+  }catch(e){ say("mintStatus","read error: "+e.message,"err"); }
+}
+
+async function loadMarket(){
+  try{
+    const n = Number(await mktRead.listingCount());
+    if(n === 0){ $("cards").innerHTML = '<div class="note">No listings yet.</div>'; return; }
+    const lim = Math.min(n, 60);
+    const L = await mktRead.getListings(0, lim);
+    let html = "";
+    for(let i=0;i<L.ids.length;i++){
+      const id = L.ids[i], tok = L.tokenIds[i], px = L.prices[i], seller = L.sellers[i], fill = L.fillable[i];
+      if(!fill) continue;
+      html += `<div class="card">
+        <div class="id">GOD #${tok}</div>
+        <div class="px">${fmtBnb(px)} BNB</div>
+        <div class="usd">${fmtUsd(px)}</div>
+        <div class="seller">${seller.slice(0,10)}…${seller.slice(-6)}</div>
+        <button class="btn sm" data-buy="${id}" data-price="${px}">Buy</button>
+      </div>`;
+    }
+    $("cards").innerHTML = html || '<div class="note">No fillable listings right now.</div>';
+    document.querySelectorAll("[data-buy]").forEach(b => b.onclick = () => buy(b.dataset.buy, b.dataset.price));
+  }catch(e){ $("cards").innerHTML = '<div class="note">Market read error: '+e.message+'</div>'; }
+}
+
+async function buy(id, price){
+  if(!signer) return connect();
+  try{
+    say("marketStatus","Sending " + fmtBnb(price) + " BNB…");
+    const tx = await mktW.buy(id, { value: price });
+    say("marketStatus","Sent " + tx.hash);
+    await tx.wait();
+    say("marketStatus","Bought in " + tx.hash.slice(0,10) + "… 🎉", "ok");
+    loadMarket();
+  }catch(e){ say("marketStatus","Buy failed: " + (e.shortMessage||e.message), "err"); }
+}
+
+async function connect(){
+  if(!window.ethereum){ say("mintStatus","No browser wallet. Mint from your Binance Agentic Wallet instead.","err"); return; }
+  try{
+    const p = new ethers.BrowserProvider(window.ethereum);
+    await p.send("eth_requestAccounts", []);
+    const s = await p.getSigner();
+    account = await s.getAddress();
+    signer = s;
+    nftW = new ethers.Contract(NFT, NFT_ABI, s);
+    mktW = new ethers.Contract(MKT, MKT_ABI, s);
+    $("connectBtn").textContent = account.slice(0,6)+"…"+account.slice(-4);
+    $("mintBtn").disabled = false; $("mintBtn").textContent = "Mint";
+    await loadMint();
+  }catch(e){ say("mintStatus","Connect failed: "+(e.shortMessage||e.message),"err"); }
+}
+
+async function mint(){
+  if(!signer) return connect();
+  const qty = Math.max(1, Math.min(20, Number($("qty").value)||1));
+  try{
+    $("mintBtn").disabled = true;
+    const cost = await nftRead.priceFor(account, qty);
+    say("mintStatus","Confirm " + fmtBnb(cost) + " BNB for " + qty + " god(s)…");
+    const tx = await nftW.mint(qty, { value: cost });
+    say("mintStatus","Sent " + tx.hash);
+    const rc = await tx.wait();
+    say("mintStatus","Minted in block " + rc.blockNumber + " 🎉","ok");
+    loadMint();
+  }catch(e){ say("mintStatus","Mint failed: "+(e.shortMessage||e.reason||e.message),"err"); }
+  finally{ $("mintBtn").disabled = false; }
+}
+
+async function listToken(){
+  if(!signer) return connect();
+  const id = Number($("listId").value);
+  const price = $("listPrice").value;
+  const dur = Number($("listDur").value) * 86400;
+  if(!id || !price) return say("listStatus","Need a token id and a price.","err");
+  try{
+    const owner = await nftRead.ownerOf(id);
+    if(owner.toLowerCase() !== account.toLowerCase()) return say("listStatus","You don't own god #"+id,"err");
+    const approved = await nftRead.isApprovedForAll(account, MKT);
+    if(!approved){
+      say("listStatus","Approving the market (one time)…");
+      const a = await nftW.setApprovalForAll(MKT, true);
+      await a.wait();
+    }
+    say("listStatus","Listing…");
+    const wei = ethers.parseEther(price);
+    const tx = await mktW.list(NFT, id, wei, dur);
+    await tx.wait();
+    say("listStatus","Listed #"+id+" at "+price+" BNB ✅","ok");
+    loadMarket();
+  }catch(e){ say("listStatus","List failed: "+(e.shortMessage||e.reason||e.message),"err"); }
+}
+
+async function makeOffer(){
+  if(!signer) return connect();
+  const id = Number($("offerId").value);
+  const amt = $("offerAmt").value;
+  const dur = Number($("offerDur").value)*86400;
+  if(!id || !amt) return say("offerStatus","Need a token id and an amount.","err");
+  try{
+    const tx = await mktW.makeOffer(NFT, id, dur, { value: ethers.parseEther(amt) });
+    say("offerStatus","Sent " + tx.hash);
+    await tx.wait();
+    say("offerStatus","Offer placed ✅","ok");
+    loadMarket();
+  }catch(e){ say("offerStatus","Offer failed: "+(e.shortMessage||e.reason||e.message),"err"); }
+}
+
+$("connectBtn").onclick = connect;
+$("mintBtn").onclick = mint;
+$("minus").onclick = () => $("qty").value = Math.max(1, Number($("qty").value)-1);
+$("plus").onclick = () => $("qty").value = Math.min(20, Number($("qty").value)+1);
+$("refreshBtn").onclick = loadMarket;
+$("listBtn").onclick = listToken;
+$("offerBtn").onclick = makeOffer;
+$("listPrice").oninput = (e) => { const v = Number(e.target.value); $("listUsd").textContent = v>0 ? "(≈ $"+(v*USD_PER_BNB).toFixed(2)+")" : ""; };
+loadMint(); loadMarket();
+if(window.ethereum) window.ethereum.on?.("accountsChanged", ()=>location.reload());
+</script>
+</body>
+</html>
